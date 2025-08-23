@@ -1,234 +1,478 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Coffee, DollarSign, Clock } from 'lucide-react';
-
-export default function HourlyPayCalculator() {
-  const [hourlyRate, setHourlyRate] = useState('');
-  const [isWorking, setIsWorking] = useState(false);
-  const [onBreak, setOnBreak] = useState(false);
-  const [currentPay, setCurrentPay] = useState(0);
-  const [workStartTime, setWorkStartTime] = useState(null);
-  const [totalWorkedSeconds, setTotalWorkedSeconds] = useState(0);
-  const [breakStartTime, setBreakStartTime] = useState(null);
-  const [breakTimeLeft, setBreakTimeLeft] = useState(0);
-  
-  const intervalRef = useRef(null);
-  const breakTimeoutRef = useRef(null);
-  const breakIntervalRef = useRef(null);
-
-  // Clear all timers on component unmount
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (breakTimeoutRef.current) clearTimeout(breakTimeoutRef.current);
-      if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
-    };
-  }, []);
-
-  // Main work timer
-  useEffect(() => {
-    if (isWorking && !onBreak && hourlyRate) {
-      intervalRef.current = setInterval(() => {
-        const now = Date.now();
-        const currentSessionSeconds = Math.floor((now - workStartTime) / 1000);
-        const totalSeconds = totalWorkedSeconds + currentSessionSeconds;
-        const hours = totalSeconds / 3600;
-        const pay = hours * parseFloat(hourlyRate);
-        setCurrentPay(pay);
-      }, 100); // Update every 100ms for smooth animation
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isWorking, onBreak, hourlyRate, workStartTime, totalWorkedSeconds]);
-
-  const startWork = () => {
-    if (!hourlyRate || parseFloat(hourlyRate) <= 0) {
-      alert('Please enter a valid hourly rate');
-      return;
-    }
-    setIsWorking(true);
-    setWorkStartTime(Date.now());
-  };
-
-  const pauseWork = () => {
-    if (isWorking && workStartTime) {
-      const workedThisSession = Math.floor((Date.now() - workStartTime) / 1000);
-      setTotalWorkedSeconds(prev => prev + workedThisSession);
-    }
-    setIsWorking(false);
-    setWorkStartTime(null);
-  };
-
-  const resetWork = () => {
-    setIsWorking(false);
-    setOnBreak(false);
-    setCurrentPay(0);
-    setWorkStartTime(null);
-    setTotalWorkedSeconds(0);
-    setBreakStartTime(null);
-    setBreakTimeLeft(0);
-    
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (breakTimeoutRef.current) clearTimeout(breakTimeoutRef.current);
-    if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
-  };
-
-  const startBreak = () => {
-    if (!isWorking) return;
-    
-    // Save current work progress
-    const workedThisSession = Math.floor((Date.now() - workStartTime) / 1000);
-    setTotalWorkedSeconds(prev => prev + workedThisSession);
-    
-    setOnBreak(true);
-    setBreakTimeLeft(30 * 60); // 30 minutes in seconds
-    setBreakStartTime(Date.now());
-
-    // Break countdown timer
-    breakIntervalRef.current = setInterval(() => {
-      setBreakTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(breakIntervalRef.current);
-          return 0;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay Tracker - Live Hourly Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        return prev - 1;
-      });
-    }, 1000);
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        .container {
+            max-width: 28rem;
+            margin: 0 auto;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo-icon {
+            font-size: 4rem;
+            color: #10b981;
+            margin-bottom: 1rem;
+        }
+        
+        .title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+        
+        .form-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 1.125rem;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .input:focus {
+            border-color: #3b82f6;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-green {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .btn-green:hover {
+            background-color: #059669;
+        }
+        
+        .btn-orange {
+            background-color: #f97316;
+            color: white;
+        }
+        
+        .btn-orange:hover {
+            background-color: #ea580c;
+        }
+        
+        .btn-blue {
+            background-color: #3b82f6;
+            color: white;
+        }
+        
+        .btn-blue:hover {
+            background-color: #2563eb;
+        }
+        
+        .btn-gray {
+            background-color: #6b7280;
+            color: white;
+        }
+        
+        .btn-gray:hover {
+            background-color: #4b5563;
+        }
+        
+        .pay-display {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .pay-amount {
+            font-size: 4rem;
+            font-weight: 800;
+            color: #059669;
+            margin-bottom: 0.5rem;
+        }
+        
+        .time-worked {
+            font-size: 1.125rem;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .hourly-rate {
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+        
+        .break-card {
+            background-color: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .break-icon {
+            font-size: 2rem;
+            color: #f59e0b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .break-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 0.5rem;
+        }
+        
+        .break-time {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #d97706;
+            margin-bottom: 0.25rem;
+        }
+        
+        .break-subtitle {
+            font-size: 0.875rem;
+            color: #d97706;
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .btn-small {
+            padding: 0.75rem 1rem;
+        }
+        
+        .full-width {
+            grid-column: span 2;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .space-y > *:not(:first-child) {
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-    // Auto-resume after 30 minutes
-    breakTimeoutRef.current = setTimeout(() => {
-      setOnBreak(false);
-      setWorkStartTime(Date.now());
-      setBreakTimeLeft(0);
-      if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
-    }, 30 * 60 * 1000);
-  };
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+        const PlayIcon = ({ className }) => <i className={`fas fa-play ${className}`}></i>;
+        const PauseIcon = ({ className }) => <i className={`fas fa-pause ${className}`}></i>;
+        const CoffeeIcon = ({ className }) => <i className={`fas fa-coffee ${className}`}></i>;
+        const DollarIcon = ({ className }) => <i className={`fas fa-dollar-sign ${className}`}></i>;
+        const ClockIcon = ({ className }) => <i className={`fas fa-clock ${className}`}></i>;
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
+        function HourlyPayCalculator() {
+            const [hourlyRate, setHourlyRate] = useState('');
+            const [isWorking, setIsWorking] = useState(false);
+            const [onBreak, setOnBreak] = useState(false);
+            const [currentPay, setCurrentPay] = useState(0);
+            const [workStartTime, setWorkStartTime] = useState(null);
+            const [totalWorkedSeconds, setTotalWorkedSeconds] = useState(0);
+            const [breakStartTime, setBreakStartTime] = useState(null);
+            const [breakTimeLeft, setBreakTimeLeft] = useState(0);
+            
+            const intervalRef = useRef(null);
+            const breakTimeoutRef = useRef(null);
+            const breakIntervalRef = useRef(null);
 
-  const getTotalWorkedTime = () => {
-    let total = totalWorkedSeconds;
-    if (isWorking && workStartTime && !onBreak) {
-      total += Math.floor((Date.now() - workStartTime) / 1000);
-    }
-    return total;
-  };
+            useEffect(() => {
+                let wakeLock = null;
+                
+                const requestWakeLock = async () => {
+                    try {
+                        if ('wakeLock' in navigator && isWorking) {
+                            wakeLock = await navigator.wakeLock.request('screen');
+                        }
+                    } catch (err) {
+                        console.log('Wake lock not supported');
+                    }
+                };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-md mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl p-8 space-y-6">
-          <div className="text-center">
-            <DollarSign className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-gray-800">Pay Tracker</h1>
-            <p className="text-gray-600">Live hourly earnings calculator</p>
-          </div>
+                if (isWorking) {
+                    requestWakeLock();
+                }
 
-          {!isWorking ? (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hourly Rate ($)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={hourlyRate}
-                  onChange={(e) => setHourlyRate(e.target.value)}
-                  placeholder="Enter your hourly rate"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg text-center"
-                />
-              </div>
-              <button
-                onClick={startWork}
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                <Play className="w-5 h-5" />
-                Start Working
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="text-6xl font-bold text-green-600 mb-2">
-                  {formatCurrency(currentPay)}
+                return () => {
+                    if (wakeLock) {
+                        wakeLock.release();
+                    }
+                };
+            }, [isWorking]);
+
+            useEffect(() => {
+                return () => {
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                    if (breakTimeoutRef.current) clearTimeout(breakTimeoutRef.current);
+                    if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
+                };
+            }, []);
+
+            useEffect(() => {
+                if (isWorking && !onBreak && hourlyRate) {
+                    intervalRef.current = setInterval(() => {
+                        const now = Date.now();
+                        const currentSessionSeconds = Math.floor((now - workStartTime) / 1000);
+                        const totalSeconds = totalWorkedSeconds + currentSessionSeconds;
+                        const hours = totalSeconds / 3600;
+                        const pay = hours * parseFloat(hourlyRate);
+                        setCurrentPay(pay);
+                    }, 100);
+                } else {
+                    if (intervalRef.current) {
+                        clearInterval(intervalRef.current);
+                        intervalRef.current = null;
+                    }
+                }
+
+                return () => {
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                };
+            }, [isWorking, onBreak, hourlyRate, workStartTime, totalWorkedSeconds]);
+
+            const startWork = () => {
+                if (!hourlyRate || parseFloat(hourlyRate) <= 0) {
+                    alert('Please enter a valid hourly rate');
+                    return;
+                }
+                setIsWorking(true);
+                setWorkStartTime(Date.now());
+            };
+
+            const pauseWork = () => {
+                if (isWorking && workStartTime) {
+                    const workedThisSession = Math.floor((Date.now() - workStartTime) / 1000);
+                    setTotalWorkedSeconds(prev => prev + workedThisSession);
+                }
+                setIsWorking(false);
+                setWorkStartTime(null);
+            };
+
+            const resetWork = () => {
+                setIsWorking(false);
+                setOnBreak(false);
+                setCurrentPay(0);
+                setWorkStartTime(null);
+                setTotalWorkedSeconds(0);
+                setBreakStartTime(null);
+                setBreakTimeLeft(0);
+                
+                if (intervalRef.current) clearInterval(intervalRef.current);
+                if (breakTimeoutRef.current) clearTimeout(breakTimeoutRef.current);
+                if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
+            };
+
+            const startBreak = () => {
+                if (!isWorking) return;
+                
+                const workedThisSession = Math.floor((Date.now() - workStartTime) / 1000);
+                setTotalWorkedSeconds(prev => prev + workedThisSession);
+                
+                setOnBreak(true);
+                setBreakTimeLeft(30 * 60);
+                setBreakStartTime(Date.now());
+
+                breakIntervalRef.current = setInterval(() => {
+                    setBreakTimeLeft(prev => {
+                        if (prev <= 1) {
+                            clearInterval(breakIntervalRef.current);
+                            return 0;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+
+                breakTimeoutRef.current = setTimeout(() => {
+                    setOnBreak(false);
+                    setWorkStartTime(Date.now());
+                    setBreakTimeLeft(0);
+                    if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
+                }, 30 * 60 * 1000);
+            };
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(amount);
+            };
+
+            const getTotalWorkedTime = () => {
+                let total = totalWorkedSeconds;
+                if (isWorking && workStartTime && !onBreak) {
+                    total += Math.floor((Date.now() - workStartTime) / 1000);
+                }
+                return total;
+            };
+
+            return (
+                <div className="container">
+                    <div className="card">
+                        <div className="header">
+                            <DollarIcon className="logo-icon" />
+                            <h1 className="title">Pay Tracker</h1>
+                            <p className="subtitle">Live hourly earnings calculator</p>
+                        </div>
+
+                        {!isWorking ? (
+                            <div className="space-y">
+                                <div className="form-section">
+                                    <label className="label">Hourly Rate ($)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={hourlyRate}
+                                        onChange={(e) => setHourlyRate(e.target.value)}
+                                        placeholder="Enter your hourly rate"
+                                        className="input"
+                                    />
+                                </div>
+                                <button onClick={startWork} className="btn btn-green">
+                                    <PlayIcon />
+                                    Start Working
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y">
+                                <div className="pay-display">
+                                    <div className="pay-amount">
+                                        {formatCurrency(currentPay)}
+                                    </div>
+                                    <div className="time-worked">
+                                        <ClockIcon />
+                                        {formatTime(getTotalWorkedTime())} worked
+                                    </div>
+                                    <div className="hourly-rate">
+                                        ${hourlyRate}/hour
+                                    </div>
+                                </div>
+
+                                {onBreak && (
+                                    <div className="break-card">
+                                        <CoffeeIcon className="break-icon" />
+                                        <div className="break-title">Break Time</div>
+                                        <div className="break-time">
+                                            {formatTime(breakTimeLeft)}
+                                        </div>
+                                        <div className="break-subtitle">
+                                            Auto-resume when break ends
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="button-grid">
+                                    {!onBreak && (
+                                        <button onClick={startBreak} className="btn btn-orange btn-small">
+                                            <CoffeeIcon />
+                                            30min Break
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={pauseWork} 
+                                        className={`btn btn-blue btn-small ${onBreak ? 'full-width' : ''}`}
+                                    >
+                                        <PauseIcon />
+                                        {onBreak ? 'End Break & Pause' : 'Pause Work'}
+                                    </button>
+                                </div>
+
+                                <button onClick={resetWork} className="btn btn-gray">
+                                    Reset Session
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="footer">
+                            Pay updates every 0.1 seconds while working
+                        </div>
+                    </div>
                 </div>
-                <div className="text-lg text-gray-600 flex items-center justify-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  {formatTime(getTotalWorkedTime())} worked
-                </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  ${hourlyRate}/hour
-                </div>
-              </div>
+            );
+        }
 
-              {onBreak && (
-                <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4 text-center">
-                  <Coffee className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-                  <div className="text-lg font-semibold text-orange-700">
-                    Break Time
-                  </div>
-                  <div className="text-2xl font-bold text-orange-600">
-                    {formatTime(breakTimeLeft)}
-                  </div>
-                  <div className="text-sm text-orange-600 mt-1">
-                    Auto-resume when break ends
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                {!onBreak && (
-                  <button
-                    onClick={startBreak}
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Coffee className="w-4 h-4" />
-                    30min Break
-                  </button>
-                )}
-                <button
-                  onClick={pauseWork}
-                  className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 ${onBreak ? 'col-span-2' : ''}`}
-                >
-                  <Pause className="w-4 h-4" />
-                  {onBreak ? 'End Break & Pause' : 'Pause Work'}
-                </button>
-              </div>
-
-              <button
-                onClick={resetWork}
-                className="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl transition-colors"
-              >
-                Reset Session
-              </button>
-            </div>
-          )}
-
-          <div className="text-center text-xs text-gray-400 border-t pt-4">
-            Pay updates every 0.1 seconds while working
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+        ReactDOM.render(<HourlyPayCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
