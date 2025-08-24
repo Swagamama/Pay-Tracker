@@ -1,694 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pay Tracker - Live Hourly Calculator</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-            min-height: 100vh;
-            padding: 1rem;
-        }
-        
-        .container {
-            max-width: 28rem;
-            margin: 0 auto;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 1.5rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            padding: 2rem;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        
-        .logo-icon {
-            font-size: 4rem;
-            color: #10b981;
-            margin-bottom: 1rem;
-        }
-        
-        .title {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #1f2937;
-            margin-bottom: 0.5rem;
-        }
-        
-        .subtitle {
-            color: #6b7280;
-            font-size: 1rem;
-        }
-        
-        .form-section {
-            margin-bottom: 1.5rem;
-        }
-        
-        .label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 0.5rem;
-        }
-        
-        .input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid #e5e7eb;
-            border-radius: 0.75rem;
-            font-size: 1.125rem;
-            text-align: center;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        
-        .input:focus {
-            border-color: #3b82f6;
-        }
-        
-        .btn {
-            padding: 1rem 1.5rem;
-            font-size: 1rem;
-            font-weight: 700;
-            border: none;
-            border-radius: 0.75rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        
-        .btn-full {
-            width: 100%;
-        }
-        
-        .btn-green {
-            background-color: #10b981;
-            color: white;
-        }
-        
-        .btn-green:hover {
-            background-color: #059669;
-        }
-        
-        .btn-orange {
-            background-color: #f97316;
-            color: white;
-        }
-        
-        .btn-orange:hover {
-            background-color: #ea580c;
-        }
-        
-        .btn-blue {
-            background-color: #3b82f6;
-            color: white;
-        }
-        
-        .btn-blue:hover {
-            background-color: #2563eb;
-        }
-        
-        .btn-gray {
-            background-color: #6b7280;
-            color: white;
-        }
-        
-        .btn-gray:hover {
-            background-color: #4b5563;
-        }
-        
-        .pay-display {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        
-        .pay-amount {
-            font-size: 4rem;
-            font-weight: 800;
-            color: #059669;
-            margin-bottom: 0.5rem;
-        }
-        
-        .time-worked {
-            font-size: 1.125rem;
-            color: #6b7280;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-bottom: 0.25rem;
-        }
-        
-        .hourly-rate {
-            font-size: 0.875rem;
-            color: #9ca3af;
-        }
-        
-        .break-card {
-            background-color: #fef3c7;
-            border: 2px solid #fbbf24;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-        
-        .break-icon {
-            font-size: 2rem;
-            color: #f59e0b;
-            margin-bottom: 0.5rem;
-        }
-        
-        .break-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #92400e;
-            margin-bottom: 0.5rem;
-        }
-        
-        .break-time {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #d97706;
-            margin-bottom: 0.25rem;
-        }
-        
-        .break-subtitle {
-            font-size: 0.875rem;
-            color: #d97706;
-        }
-        
-        .button-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .btn-small {
-            padding: 0.75rem 1rem;
-        }
-        
-        .full-width {
-            grid-column: span 2;
-        }
-        
-        .footer {
-            text-align: center;
-            font-size: 0.75rem;
-            color: #9ca3af;
-            padding-top: 1rem;
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .status-working {
-            background-color: #10b981;
-            animation: pulse 2s infinite;
-        }
-        
-        .status-break {
-            background-color: #f97316;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .space-y > *:not(:first-child) {
-            margin-top: 1.5rem;
-        }
-        
-        .notification-status {
-            background-color: #f3f4f6;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            margin-bottom: 1rem;
-            font-size: 0.875rem;
-            text-align: center;
-        }
-        
-        .notification-enabled {
-            color: #059669;
-            background-color: #f0fdf4;
-            border-color: #bbf7d0;
-        }
-        
-        .notification-disabled {
-            color: #dc2626;
-            background-color: #fef2f2;
-            border-color: #fecaca;
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pay Tracker Pro</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+    }
+    body.dark {
+      --bg: #111827;
+      --card: #1f2937;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+    }
+    body {
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      margin: 0; padding: 1rem;
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+    }
+    .container { max-width: 32rem; margin: auto; }
+    .card {
+      background: var(--card); border-radius: 1.25rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      padding: 1.5rem; margin-bottom: 1rem;
+    }
+    .header { display:flex; justify-content:space-between; align-items:center; }
+    .title { font-size: 1.5rem; font-weight: 700; }
+    .toggle-dark { cursor:pointer; font-size: 1.2rem; }
+    .pay-display { text-align:center; position: sticky; top:0; background:var(--card); padding:1rem; z-index:10; }
+    .pay-amount { font-size:2.5rem; font-weight:800; color:#059669; }
+    .time-worked { margin-top:0.5rem; font-size:1rem; color:var(--muted); }
+    .btn { padding:0.75rem 1rem; font-weight:600; border:none; border-radius:0.75rem; cursor:pointer; margin:0.25rem; }
+    .btn-green { background:#10b981; color:white; }
+    .btn-blue { background:#3b82f6; color:white; }
+    .btn-orange { background:#f97316; color:white; }
+    .btn-gray { background:#6b7280; color:white; }
+    .btn-small { font-size:0.9rem; }
+    .goal { margin-top:1rem; }
+    .progress { background:#e5e7eb; border-radius:0.5rem; overflow:hidden; height:1rem; }
+    .progress-bar { height:100%; background:#10b981; width:0%; transition:width 0.3s; }
+    .history { font-size:0.9rem; color:var(--muted); }
+    .footer { text-align:center; font-size:0.75rem; margin-top:1rem; color:var(--muted); }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <div class="header">
-                <i class="fas fa-dollar-sign logo-icon"></i>
-                <h1 class="title">Pay Tracker</h1>
-                <p class="subtitle">True background operation</p>
-            </div>
-
-            <!-- Notification Status -->
-            <div id="notificationStatus" class="notification-status hidden"></div>
-
-            <!-- Setup Form -->
-            <div id="setupForm" class="space-y">
-                <div class="form-section">
-                    <label class="label">Hourly Rate ($)</label>
-                    <input
-                        type="number"
-                        step="0.01"
-                        id="hourlyRateInput"
-                        placeholder="Enter your hourly rate"
-                        class="input"
-                    />
-                </div>
-                <button id="startWorkBtn" class="btn btn-green btn-full">
-                    <i class="fas fa-play"></i>
-                    Start Working
-                </button>
-            </div>
-
-            <!-- Working Display -->
-            <div id="workingDisplay" class="space-y hidden">
-                <div class="pay-display">
-                    <div id="payAmount" class="pay-amount">$0.00</div>
-                    <div class="time-worked">
-                        <span id="statusIndicator" class="status-indicator status-working"></span>
-                        <i class="fas fa-clock"></i>
-                        <span id="timeWorked">0:00 worked</span>
-                    </div>
-                    <div id="hourlyRateDisplay" class="hourly-rate">$0/hour</div>
-                </div>
-
-                <!-- Break Card -->
-                <div id="breakCard" class="break-card hidden">
-                    <i class="fas fa-coffee break-icon"></i>
-                    <div class="break-title">Break Time</div>
-                    <div id="breakTimeLeft" class="break-time">30:00</div>
-                    <div class="break-subtitle">Notification when break ends</div>
-                </div>
-
-                <!-- Control Buttons -->
-                <div class="button-grid">
-                    <button id="breakBtn" class="btn btn-orange btn-small">
-                        <i class="fas fa-coffee"></i>
-                        30min Break
-                    </button>
-                    <button id="pauseBtn" class="btn btn-blue btn-small">
-                        <i class="fas fa-pause"></i>
-                        Pause Work
-                    </button>
-                </div>
-
-                <button id="resetBtn" class="btn btn-gray btn-full">
-                    Reset Session
-                </button>
-            </div>
-
-            <div class="footer">
-                Works in background - calculations based on real time
-            </div>
-        </div>
+  <div class="container">
+    <div class="card header">
+      <div class="title">Pay Tracker Pro</div>
+      <div id="darkToggle" class="toggle-dark"><i class="fas fa-moon"></i></div>
     </div>
 
-    <script>
-        // Background-robust state management
-        class PayTracker {
-            constructor() {
-                this.loadState();
-                this.initNotifications();
-                this.initVisibilityHandling();
-                this.startUpdateLoop();
-            }
+    <div id="setupCard" class="card">
+      <label>Hourly Rate ($)</label>
+      <input id="hourlyRateInput" type="number" step="0.01" placeholder="Enter hourly rate" class="input"/>
+      <label>Preset Jobs</label>
+      <select id="presetSelect" class="input">
+        <option value="">-- Select Job --</option>
+        <option value="28">🏭 Factory — $28/hr</option>
+        <option value="35">🚗 Delivery — $35/hr</option>
+        <option value="50">🖥️ Freelance — $50/hr</option>
+      </select>
+      <button id="startWorkBtn" class="btn btn-green btn-full"><i class="fas fa-play"></i> Start Working</button>
+    </div>
 
-            // Save/load state to survive page refreshes and background
-            saveState() {
-                const state = {
-                    hourlyRate: this.hourlyRate || 0,
-                    isWorking: this.isWorking || false,
-                    onBreak: this.onBreak || false,
-                    workStartTime: this.workStartTime,
-                    totalWorkedMs: this.totalWorkedMs || 0,
-                    breakStartTime: this.breakStartTime,
-                    breakDurationMs: 30 * 60 * 1000, // 30 minutes
-                    lastUpdateTime: Date.now()
-                };
-                localStorage.setItem('payTracker', JSON.stringify(state));
-            }
+    <div id="workCard" class="card hidden">
+      <div class="pay-display">
+        <div id="payAmount" class="pay-amount">$0.00</div>
+        <div id="timeWorked" class="time-worked">0:00 worked</div>
+        <div id="hourlyRateDisplay" class="hourly-rate">$0/hour</div>
+      </div>
 
-            loadState() {
-                const saved = localStorage.getItem('payTracker');
-                if (saved) {
-                    const state = JSON.parse(saved);
-                    this.hourlyRate = state.hourlyRate || 0;
-                    this.isWorking = state.isWorking || false;
-                    this.onBreak = state.onBreak || false;
-                    this.workStartTime = state.workStartTime;
-                    this.totalWorkedMs = state.totalWorkedMs || 0;
-                    this.breakStartTime = state.breakStartTime;
-                    this.breakDurationMs = state.breakDurationMs || (30 * 60 * 1000);
-                    
-                    // Handle time that passed while app was closed
-                    this.handleTimeGap(state.lastUpdateTime);
-                } else {
-                    this.resetState();
-                }
-            }
+      <div>
+        <button id="pauseBtn" class="btn btn-blue btn-small"><i class="fas fa-pause"></i> Pause Work</button>
+        <select id="breakSelect" class="input btn-small">
+          <option value="300">5 min</option>
+          <option value="900">15 min</option>
+          <option value="1800" selected>30 min</option>
+          <option value="3600">1 hr</option>
+        </select>
+        <button id="breakBtn" class="btn btn-orange btn-small"><i class="fas fa-coffee"></i> Break</button>
+        <button id="resetBtn" class="btn btn-gray btn-small"><i class="fas fa-undo"></i> Reset</button>
+        <button id="exportBtn" class="btn btn-green btn-small"><i class="fas fa-file-export"></i> Export CSV</button>
+      </div>
 
-            resetState() {
-                this.hourlyRate = 0;
-                this.isWorking = false;
-                this.onBreak = false;
-                this.workStartTime = null;
-                this.totalWorkedMs = 0;
-                this.breakStartTime = null;
-                this.breakDurationMs = 30 * 60 * 1000;
-            }
+      <div class="goal">
+        <label>Savings Goal ($)</label>
+        <input id="goalInput" type="number" placeholder="Enter goal amount"/>
+        <div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+      </div>
+    </div>
 
-            handleTimeGap(lastUpdateTime) {
-                if (!lastUpdateTime || !this.isWorking) return;
+    <div class="card history">
+      <div id="dailyTotal">Today: $0.00 (0h 0m)</div>
+      <div id="weeklyTotal">This Week: $0.00 (0h 0m)</div>
+    </div>
 
-                const now = Date.now();
-                const gapMs = now - lastUpdateTime;
+    <div class="footer">Made for workers — track time, breaks & pay easily</div>
+  </div>
 
-                if (this.onBreak && this.breakStartTime) {
-                    // Check if break should have ended
-                    const breakElapsed = now - this.breakStartTime;
-                    if (breakElapsed >= this.breakDurationMs) {
-                        // Break ended while app was closed
-                        this.endBreak();
-                        // Add work time after break ended
-                        const workTimeAfterBreak = breakElapsed - this.breakDurationMs;
-                        this.workStartTime = now - workTimeAfterBreak;
-                        this.showNotification('Break ended! Back to work.', 'break-ended');
-                    }
-                } else if (this.workStartTime) {
-                    // Just update work start time to account for gap
-                    // No action needed - calculations are based on timestamps
-                }
-            }
+  <script>
+    class PayTrackerPro {
+      constructor() {
+        this.isWorking=false; this.isPaused=false;
+        this.hourlyRate=0; this.workStartTime=null; this.totalWorkedMs=0;
+        this.breakDuration=1800; this.logs=JSON.parse(localStorage.getItem('logs')||'[]');
+        this.goal=0;
+        this.loadState(); this.startLoops();
+        this.updateHistory();
+      }
+      saveState(){
+        localStorage.setItem('trackerState',JSON.stringify({
+          hourlyRate:this.hourlyRate,isWorking:this.isWorking,isPaused:this.isPaused,
+          workStartTime:this.workStartTime,totalWorkedMs:this.totalWorkedMs,goal:this.goal
+        }));
+        localStorage.setItem('logs',JSON.stringify(this.logs));
+      }
+      loadState(){
+        const s=localStorage.getItem('trackerState'); if(s){Object.assign(this,JSON.parse(s));}
+      }
+      formatTime(sec){
+        const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60);
+        return `${h}h ${m}m`;
+      }
+      formatPay(ms){
+        return (ms/(1000*60*60)*this.hourlyRate).toLocaleString("en-US",{style:"currency",currency:"USD"});
+      }
+      calculatePay(){
+        let ms=this.totalWorkedMs;
+        if(this.isWorking&&!this.isPaused) ms+=Date.now()-this.workStartTime;
+        return ms/(1000*60*60)*this.hourlyRate;
+      }
+      calculateWorked(){
+        let ms=this.totalWorkedMs;
+        if(this.isWorking&&!this.isPaused) ms+=Date.now()-this.workStartTime;
+        return Math.floor(ms/1000);
+      }
+      updateDisplay(){
+        document.getElementById('payAmount').textContent=this.calculatePay().toLocaleString("en-US",{style:"currency",currency:"USD"});
+        document.getElementById('timeWorked').textContent=this.formatTime(this.calculateWorked());
+        document.getElementById('hourlyRateDisplay').textContent=`$${this.hourlyRate}/hour`;
+        this.updateGoal();
+        this.saveState();
+      }
+      updateGoal(){
+        if(!this.goal) return;
+        const earned=this.logs.reduce((a,b)=>a+b.pay,0)+this.calculatePay();
+        const pct=Math.min(100,earned/this.goal*100);
+        document.getElementById('progressBar').style.width=pct+"%";
+      }
+      updateHistory(){
+        const today=new Date().toDateString();
+        const weekStart=new Date(); weekStart.setDate(weekStart.getDate()-weekStart.getDay());
+        const d=this.logs.filter(l=>new Date(l.date).toDateString()==today);
+        const w=this.logs.filter(l=>new Date(l.date)>=weekStart);
+        const sum=(arr)=>arr.reduce((a,b)=>({pay:a.pay+b.pay,ms:a.ms+b.ms}),{pay:0,ms:0});
+        const ds=sum(d), ws=sum(w);
+        document.getElementById('dailyTotal').textContent=`Today: ${ds.pay.toLocaleString("en-US",{style:"currency",currency:"USD"})} (${this.formatTime(ds.ms/1000)})`;
+        document.getElementById('weeklyTotal').textContent=`This Week: ${ws.pay.toLocaleString("en-US",{style:"currency",currency:"USD"})} (${this.formatTime(ws.ms/1000)})`;
+      }
+      startWork(rate){this.hourlyRate=rate; this.isWorking=true; this.isPaused=false; this.workStartTime=Date.now(); this.totalWorkedMs=0;
+        document.getElementById('setupCard').classList.add('hidden'); document.getElementById('workCard').classList.remove('hidden');}
+      togglePause(){
+        const btn=document.getElementById('pauseBtn');
+        if(!this.isWorking) return;
+        if(!this.isPaused){this.totalWorkedMs+=Date.now()-this.workStartTime; this.isPaused=true; btn.innerHTML='<i class="fas fa-play"></i> Resume'; btn.classList.remove('btn-blue'); btn.classList.add('btn-green');}
+        else{this.workStartTime=Date.now(); this.isPaused=false; btn.innerHTML='<i class="fas fa-pause"></i> Pause'; btn.classList.remove('btn-green'); btn.classList.add('btn-blue');}
+      }
+      reset(){
+        const pay=this.calculatePay(); const sec=this.calculateWorked();
+        this.logs.push({date:new Date(),pay:pay,ms:sec*1000});
+        alert(`Shift Ended: ${this.formatTime(sec)}, ${pay.toLocaleString("en-US",{style:"currency",currency:"USD"})} earned.`);
+        this.isWorking=false; this.isPaused=false; this.totalWorkedMs=0; this.workStartTime=null;
+        document.getElementById('setupCard').classList.remove('hidden'); document.getElementById('workCard').classList.add('hidden');
+        this.updateHistory();
+      }
+      exportCSV(){
+        let csv="Date,Hours Worked,Pay\n";
+        this.logs.forEach(l=>csv+=`${new Date(l.date).toLocaleString()},${(l.ms/1000/3600).toFixed(2)},${l.pay}\n`);
+        const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
+        const a=document.createElement('a'); a.href=url; a.download="pay_log.csv"; a.click();
+      }
+      startLoops(){setInterval(()=>this.updateDisplay(),1000);}
+    }
 
-            async initNotifications() {
-                if ('Notification' in window) {
-                    if (Notification.permission === 'default') {
-                        const permission = await Notification.requestPermission();
-                        this.updateNotificationStatus(permission);
-                    } else {
-                        this.updateNotificationStatus(Notification.permission);
-                    }
-                } else {
-                    this.updateNotificationStatus('unsupported');
-                }
-            }
-
-            updateNotificationStatus(permission) {
-                const statusDiv = document.getElementById('notificationStatus');
-                statusDiv.classList.remove('hidden');
-                
-                if (permission === 'granted') {
-                    statusDiv.textContent = '🔔 Notifications enabled - you\'ll be alerted when breaks end';
-                    statusDiv.className = 'notification-status notification-enabled';
-                } else if (permission === 'denied') {
-                    statusDiv.textContent = '🔕 Notifications blocked - enable them for break alerts';
-                    statusDiv.className = 'notification-status notification-disabled';
-                } else if (permission === 'unsupported') {
-                    statusDiv.textContent = '📱 Notifications not supported on this device';
-                    statusDiv.className = 'notification-status notification-disabled';
-                } else {
-                    statusDiv.textContent = '🔔 Click "Allow" to get break end notifications';
-                    statusDiv.className = 'notification-status notification-disabled';
-                }
-            }
-
-            showNotification(message, tag) {
-                if (Notification.permission === 'granted') {
-                    new Notification('Pay Tracker', {
-                        body: message,
-                        tag: tag,
-                        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2310b981"><path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.9 1 3 1.9 3 3V21C3 22.1 3.9 23 5 23H19C20.1 23 21 22.1 21 21V9Z"/></svg>',
-                        requireInteraction: true,
-                        vibrate: [200, 100, 200]
-                    });
-                }
-            }
-
-            initVisibilityHandling() {
-                // Update when page becomes visible again
-                document.addEventListener('visibilitychange', () => {
-                    if (!document.hidden) {
-                        this.loadState(); // Recalculate based on stored timestamps
-                        this.updateDisplay();
-                    } else {
-                        this.saveState(); // Save current state when going to background
-                    }
-                });
-
-                // Save state periodically and on page unload
-                window.addEventListener('beforeunload', () => this.saveState());
-                setInterval(() => this.saveState(), 5000); // Save every 5 seconds
-            }
-
-            startUpdateLoop() {
-                // Update display every 100ms when visible
-                setInterval(() => {
-                    if (!document.hidden) {
-                        this.updateDisplay();
-                    }
-                }, 100);
-
-                // Check for break end every second (works even in background)
-                setInterval(() => {
-                    this.checkBreakStatus();
-                }, 1000);
-            }
-
-            checkBreakStatus() {
-                if (this.onBreak && this.breakStartTime) {
-                    const now = Date.now();
-                    const breakElapsed = now - this.breakStartTime;
-                    
-                    if (breakElapsed >= this.breakDurationMs) {
-                        this.endBreak();
-                        this.showNotification('Your 30-minute break is over! Time to get back to work.', 'break-ended');
-                    }
-                }
-            }
-
-            calculateCurrentPay() {
-                if (!this.isWorking || !this.hourlyRate) return 0;
-
-                let totalWorkMs = this.totalWorkedMs;
-                
-                if (this.workStartTime && !this.onBreak) {
-                    totalWorkMs += Date.now() - this.workStartTime;
-                }
-
-                const totalHours = totalWorkMs / (1000 * 60 * 60);
-                return totalHours * this.hourlyRate;
-            }
-
-            getTotalWorkedTime() {
-                let totalWorkMs = this.totalWorkedMs;
-                
-                if (this.isWorking && this.workStartTime && !this.onBreak) {
-                    totalWorkMs += Date.now() - this.workStartTime;
-                }
-
-                return Math.floor(totalWorkMs / 1000);
-            }
-
-            getBreakTimeLeft() {
-                if (!this.onBreak || !this.breakStartTime) return 0;
-                
-                const elapsed = Date.now() - this.breakStartTime;
-                const remaining = Math.max(0, this.breakDurationMs - elapsed);
-                return Math.floor(remaining / 1000);
-            }
-
-            formatTime(seconds) {
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins}:${secs.toString().padStart(2, '0')}`;
-            }
-
-            formatCurrency(amount) {
-                return new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }).format(amount);
-            }
-
-            updateDisplay() {
-                const payAmount = document.getElementById('payAmount');
-                const timeWorked = document.getElementById('timeWorked');
-                const breakTimeLeft = document.getElementById('breakTimeLeft');
-                const statusIndicator = document.getElementById('statusIndicator');
-
-                if (this.isWorking) {
-                    payAmount.textContent = this.formatCurrency(this.calculateCurrentPay());
-                    timeWorked.textContent = `${this.formatTime(this.getTotalWorkedTime())} worked`;
-                    
-                    if (this.onBreak) {
-                        statusIndicator.className = 'status-indicator status-break';
-                        breakTimeLeft.textContent = this.formatTime(this.getBreakTimeLeft());
-                    } else {
-                        statusIndicator.className = 'status-indicator status-working';
-                    }
-                }
-
-                this.saveState();
-            }
-
-            startWork() {
-                const rate = parseFloat(document.getElementById('hourlyRateInput').value);
-                if (!rate || rate <= 0) {
-                    alert('Please enter a valid hourly rate');
-                    return;
-                }
-                
-                this.hourlyRate = rate;
-                this.isWorking = true;
-                this.workStartTime = Date.now();
-                this.totalWorkedMs = 0;
-                
-                document.getElementById('setupForm').classList.add('hidden');
-                document.getElementById('workingDisplay').classList.remove('hidden');
-                document.getElementById('hourlyRateDisplay').textContent = `$${rate}/hour`;
-                
-                this.saveState();
-                this.showNotification(`Started tracking at $${rate}/hour`, 'work-started');
-            }
-
-            pauseWork() {
-                if (this.isWorking && this.workStartTime && !this.onBreak) {
-                    this.totalWorkedMs += Date.now() - this.workStartTime;
-                }
-                
-                this.isWorking = false;
-                this.onBreak = false;
-                this.workStartTime = null;
-                this.breakStartTime = null;
-                
-                document.getElementById('setupForm').classList.remove('hidden');
-                document.getElementById('workingDisplay').classList.add('hidden');
-                document.getElementById('breakCard').classList.add('hidden');
-                
-                document.getElementById('hourlyRateInput').value = this.hourlyRate;
-                this.saveState();
-            }
-
-            startBreak() {
-                if (!this.isWorking || this.onBreak) return;
-                
-                // Save current work progress
-                if (this.workStartTime) {
-                    this.totalWorkedMs += Date.now() - this.workStartTime;
-                }
-                
-                this.onBreak = true;
-                this.breakStartTime = Date.now();
-                this.workStartTime = null;
-                
-                document.getElementById('breakCard').classList.remove('hidden');
-                document.getElementById('breakBtn').style.display = 'none';
-                document.getElementById('pauseBtn').classList.add('full-width');
-                document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> End Break & Pause';
-                
-                this.saveState();
-                this.showNotification('Break started! 30 minutes until auto-resume.', 'break-started');
-            }
-
-            endBreak() {
-                this.onBreak = false;
-                this.workStartTime = Date.now();
-                this.breakStartTime = null;
-                
-                document.getElementById('breakCard').classList.add('hidden');
-                document.getElementById('breakBtn').style.display = 'flex';
-                document.getElementById('pauseBtn').classList.remove('full-width');
-                document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> Pause Work';
-                
-                this.saveState();
-            }
-
-            reset() {
-                this.resetState();
-                localStorage.removeItem('payTracker');
-                
-                document.getElementById('setupForm').classList.remove('hidden');
-                document.getElementById('workingDisplay').classList.add('hidden');
-                document.getElementById('breakCard').classList.add('hidden');
-                document.getElementById('hourlyRateInput').value = '';
-            }
-        }
-
-        // Initialize the app
-        const tracker = new PayTracker();
-
-        // Set up event listeners
-        document.getElementById('startWorkBtn').addEventListener('click', () => tracker.startWork());
-        document.getElementById('pauseBtn').addEventListener('click', () => tracker.pauseWork());
-        document.getElementById('breakBtn').addEventListener('click', () => tracker.startBreak());
-        document.getElementById('resetBtn').addEventListener('click', () => tracker.reset());
-
-        document.getElementById('hourlyRateInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                tracker.startWork();
-            }
-        });
-
-        // Initial display update
-        if (tracker.isWorking) {
-            document.getElementById('setupForm').classList.add('hidden');
-            document.getElementById('workingDisplay').classList.remove('hidden');
-            document.getElementById('hourlyRateDisplay').textContent = `$${tracker.hourlyRate}/hour`;
-            
-            if (tracker.onBreak) {
-                document.getElementById('breakCard').classList.remove('hidden');
-                document.getElementById('breakBtn').style.display = 'none';
-                document.getElementById('pauseBtn').classList.add('full-width');
-                document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> End Break & Pause';
-            }
-        } else {
-            document.getElementById('hourlyRateInput').value = tracker.hourlyRate || '';
-        }
-    </script>
+    const tracker=new PayTrackerPro();
+    document.getElementById("startWorkBtn").onclick=()=>{let r=parseFloat(document.getElementById("hourlyRateInput").value)||parseFloat(document.getElementById("presetSelect").value); if(r) tracker.startWork(r); else alert("Enter rate");};
+    document.getElementById("pauseBtn").onclick=()=>tracker.togglePause();
+    document.getElementById("resetBtn").onclick=()=>tracker.reset();
+    document.getElementById("exportBtn").onclick=()=>tracker.exportCSV();
+    document.getElementById("goalInput").onchange=(e)=>{tracker.goal=parseFloat(e.target.value)||0; tracker.updateGoal();};
+    document.getElementById("darkToggle").onclick=()=>{document.body.classList.toggle('dark'); localStorage.setItem('darkMode',document.body.classList.contains('dark'));};
+    if(localStorage.getItem('darkMode')==='true') document.body.classList.add('dark');
+  </script>
 </body>
 </html>
