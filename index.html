@@ -6,15 +6,10 @@
   <title>Pay Tracker Pro</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    :root {
-      --bg:#f9fafb; --card:#ffffff; --text:#1f2937; --muted:#6b7280;
-    }
+    :root { --bg:#f9fafb; --card:#ffffff; --text:#1f2937; --muted:#6b7280; }
     body.dark { --bg:#111827; --card:#1f2937; --text:#f9fafb; --muted:#9ca3af; }
-    body {
-      background:var(--bg); font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-      margin:0; padding:1rem; min-height:100vh; color:var(--text);
-      transition:background .3s,color .3s;
-    }
+    body { background:var(--bg); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+           margin:0; padding:1rem; min-height:100vh; color:var(--text); transition:background .3s,color .3s; }
     .container{max-width:32rem;margin:auto;}
     .card{background:var(--card);border-radius:1rem;box-shadow:0 8px 20px rgba(0,0,0,0.15);padding:1rem;margin-bottom:1rem;}
     .header{display:flex;justify-content:space-between;align-items:center;}
@@ -33,6 +28,7 @@
     .history-list{font-size:.9rem;color:var(--text);}
     .history-item{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid #e5e7eb;}
     .hidden{display:none;}
+    .break-display{text-align:center;font-weight:600;color:#f97316;margin-top:.5rem;}
   </style>
 </head>
 <body>
@@ -58,9 +54,17 @@
       </div>
       <div>
         <button id="pauseBtn" class="btn btn-blue"><i class="fas fa-pause"></i> Pause</button>
+        <select id="breakSelect">
+          <option value="300">5 min</option>
+          <option value="900">15 min</option>
+          <option value="1800" selected>30 min</option>
+          <option value="3600">1 hr</option>
+        </select>
+        <button id="breakBtn" class="btn btn-orange"><i class="fas fa-coffee"></i> Break</button>
         <button id="stopBtn" class="btn btn-red"><i class="fas fa-stop"></i> Stop Work</button>
         <button id="resetBtn" class="btn btn-gray"><i class="fas fa-undo"></i> Reset Session</button>
       </div>
+      <div id="breakDisplay" class="break-display hidden"></div>
     </div>
 
     <!-- Totals -->
@@ -74,29 +78,45 @@
     <!-- History -->
     <div class="card">
       <strong>History</strong>
+      <button id="exportBtn" class="btn btn-green btn-small"><i class="fas fa-file-export"></i> Export CSV</button>
       <div id="historyList" class="history-list"></div>
     </div>
 
-    <div class="footer">Simple work tracker — logs time, pay, & history</div>
+    <div class="footer">Simple work tracker — logs time, pay, breaks & history</div>
   </div>
 
   <script>
     class PayTracker {
       constructor(){
-        this.isWorking=false; this.isPaused=false; this.hourlyRate=32;
-        this.workStartTime=null; this.totalWorkedMs=0;
+        this.isWorking=false; this.isPaused=false; this.onBreak=false;
+        this.hourlyRate=32; this.workStartTime=null; this.totalWorkedMs=0;
+        this.breakEndTime=null;
         this.logs=JSON.parse(localStorage.getItem('logs')||'[]');
         this.loadState(); this.startLoop(); this.updateHistory(); this.updateTotals();
       }
       saveState(){ localStorage.setItem('trackerState',JSON.stringify({
-        hourlyRate:this.hourlyRate,isWorking:this.isWorking,isPaused:this.isPaused,
-        workStartTime:this.workStartTime,totalWorkedMs:this.totalWorkedMs
+        hourlyRate:this.hourlyRate,isWorking:this.isWorking,isPaused:this.isPaused,onBreak:this.onBreak,
+        workStartTime:this.workStartTime,totalWorkedMs:this.totalWorkedMs,breakEndTime:this.breakEndTime
       })); localStorage.setItem('logs',JSON.stringify(this.logs)); }
       loadState(){ const s=localStorage.getItem('trackerState'); if(s) Object.assign(this,JSON.parse(s)); }
       formatTime(sec){const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60); return `${h}h ${m}m`; }
-      calcPay(){let ms=this.totalWorkedMs; if(this.isWorking&&!this.isPaused) ms+=Date.now()-this.workStartTime; return (ms/3600000)*this.hourlyRate;}
-      calcSec(){let ms=this.totalWorkedMs; if(this.isWorking&&!this.isPaused) ms+=Date.now()-this.workStartTime; return Math.floor(ms/1000);}
-      updateDisplay(){document.getElementById('payAmount').textContent=this.calcPay().toLocaleString("en-US",{style:"currency",currency:"USD"}); document.getElementById('timeWorked').textContent=this.formatTime(this.calcSec()); document.getElementById('hourlyRateDisplay').textContent=`$${this.hourlyRate}/hour`; this.saveState();}
+      formatHMS(sec){const m=Math.floor(sec/60),s=sec%60; return `${m}m ${s}s`; }
+      calcPay(){let ms=this.totalWorkedMs; if(this.isWorking&&!this.isPaused&&!this.onBreak) ms+=Date.now()-this.workStartTime; return (ms/3600000)*this.hourlyRate;}
+      calcSec(){let ms=this.totalWorkedMs; if(this.isWorking&&!this.isPaused&&!this.onBreak) ms+=Date.now()-this.workStartTime; return Math.floor(ms/1000);}
+      updateDisplay(){
+        document.getElementById('payAmount').textContent=this.calcPay().toLocaleString("en-US",{style:"currency",currency:"USD"});
+        document.getElementById('timeWorked').textContent=this.formatTime(this.calcSec());
+        document.getElementById('hourlyRateDisplay').textContent=`$${this.hourlyRate}/hour`;
+        if(this.onBreak){
+          const sec=Math.max(0,Math.floor((this.breakEndTime-Date.now())/1000));
+          document.getElementById("breakDisplay").classList.remove("hidden");
+          document.getElementById("breakDisplay").textContent=`On Break: ${this.formatHMS(sec)}`;
+          if(sec<=0){ this.endBreak(); }
+        } else {
+          document.getElementById("breakDisplay").classList.add("hidden");
+        }
+        this.saveState();
+      }
       updateHistory(){
         const list=document.getElementById('historyList'); list.innerHTML="";
         this.logs.forEach((l,i)=>{
@@ -116,22 +136,32 @@
         document.getElementById('dailyTotal').textContent=`Today: ${ds.pay.toLocaleString("en-US",{style:"currency",currency:"USD"})} (${this.formatTime(ds.ms/1000)})`;
         document.getElementById('weeklyTotal').textContent=`This Week: ${ws.pay.toLocaleString("en-US",{style:"currency",currency:"USD"})} (${this.formatTime(ws.ms/1000)})`;
       }
-      startWork(rate){this.hourlyRate=rate; this.isWorking=true; this.isPaused=false; this.workStartTime=Date.now(); this.totalWorkedMs=0; document.getElementById("setupCard").classList.add("hidden"); document.getElementById("workCard").classList.remove("hidden");}
+      startWork(rate){this.hourlyRate=rate; this.isWorking=true; this.isPaused=false; this.onBreak=false; this.workStartTime=Date.now(); this.totalWorkedMs=0; document.getElementById("setupCard").classList.add("hidden"); document.getElementById("workCard").classList.remove("hidden");}
       togglePause(){const btn=document.getElementById("pauseBtn"); if(!this.isWorking)return; if(!this.isPaused){this.totalWorkedMs+=Date.now()-this.workStartTime; this.isPaused=true; btn.innerHTML='<i class="fas fa-play"></i> Resume'; btn.classList.remove("btn-blue"); btn.classList.add("btn-green");} else{this.workStartTime=Date.now(); this.isPaused=false; btn.innerHTML='<i class="fas fa-pause"></i> Pause'; btn.classList.remove("btn-green"); btn.classList.add("btn-blue");}}
-      stopWork(){const pay=this.calcPay(); const sec=this.calcSec(); this.logs.push({date:new Date(),pay:pay,ms:sec*1000}); this.isWorking=false; this.isPaused=false; this.totalWorkedMs=0; this.workStartTime=null; document.getElementById("setupCard").classList.remove("hidden"); document.getElementById("workCard").classList.add("hidden"); alert(`Shift Ended: ${this.formatTime(sec)}, ${pay.toLocaleString("en-US",{style:"currency",currency:"USD"})} earned.`); this.updateHistory(); this.updateTotals();}
-      resetSession(){this.isWorking=false; this.isPaused=false; this.totalWorkedMs=0; this.workStartTime=null; document.getElementById("setupCard").classList.remove("hidden"); document.getElementById("workCard").classList.add("hidden");}
+      startBreak(){ if(!this.isWorking||this.onBreak) return; this.totalWorkedMs+=Date.now()-this.workStartTime; this.onBreak=true; const sec=parseInt(document.getElementById("breakSelect").value); this.breakEndTime=Date.now()+sec*1000; }
+      endBreak(){ this.onBreak=false; this.workStartTime=Date.now(); this.breakEndTime=null; }
+      stopWork(){const pay=this.calcPay(); const sec=this.calcSec(); this.logs.push({date:new Date(),pay:pay,ms:sec*1000}); this.isWorking=false; this.isPaused=false; this.onBreak=false; this.totalWorkedMs=0; this.workStartTime=null; document.getElementById("setupCard").classList.remove("hidden"); document.getElementById("workCard").classList.add("hidden"); alert(`Shift Ended: ${this.formatTime(sec)}, ${pay.toLocaleString("en-US",{style:"currency",currency:"USD"})} earned.`); this.updateHistory(); this.updateTotals();}
+      resetSession(){this.isWorking=false; this.isPaused=false; this.onBreak=false; this.totalWorkedMs=0; this.workStartTime=null; this.breakEndTime=null; document.getElementById("setupCard").classList.remove("hidden"); document.getElementById("workCard").classList.add("hidden");}
       resetToday(){const today=new Date().toDateString(); this.logs=this.logs.filter(l=>new Date(l.date).toDateString()!=today); this.updateHistory(); this.updateTotals(); this.saveState();}
       resetWeek(){const weekStart=new Date(); weekStart.setDate(weekStart.getDate()-weekStart.getDay()); this.logs=this.logs.filter(l=>new Date(l.date)<weekStart); this.updateHistory(); this.updateTotals(); this.saveState();}
+      exportCSV(){
+        let csv="Date,Hours Worked,Pay\n";
+        this.logs.forEach(l=>csv+=`${new Date(l.date).toLocaleString()},${(l.ms/1000/3600).toFixed(2)},${l.pay}\n`);
+        const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
+        const a=document.createElement('a'); a.href=url; a.download="pay_log.csv"; a.click();
+      }
       startLoop(){setInterval(()=>this.updateDisplay(),1000);}
     }
 
     const tracker=new PayTracker();
     document.getElementById("startWorkBtn").onclick=()=>{let r=parseFloat(document.getElementById("hourlyRateInput").value)||32; tracker.startWork(r);};
     document.getElementById("pauseBtn").onclick=()=>tracker.togglePause();
+    document.getElementById("breakBtn").onclick=()=>tracker.startBreak();
     document.getElementById("stopBtn").onclick=()=>tracker.stopWork();
     document.getElementById("resetBtn").onclick=()=>tracker.resetSession();
     document.getElementById("resetTodayBtn").onclick=()=>tracker.resetToday();
     document.getElementById("resetWeekBtn").onclick=()=>tracker.resetWeek();
+    document.getElementById("exportBtn").onclick=()=>tracker.exportCSV();
     document.getElementById("darkToggle").onclick=()=>{document.body.classList.toggle("dark"); localStorage.setItem("darkMode",document.body.classList.contains("dark"));};
     if(localStorage.getItem("darkMode")==="true") document.body.classList.add("dark");
   </script>
