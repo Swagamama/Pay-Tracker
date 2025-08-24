@@ -30,6 +30,49 @@
     .hidden{display:none;}
     .break-display{text-align:center;font-weight:600;color:#f97316;margin-top:.5rem;}
     .history-controls button{margin-left:.3rem;}
+
+    /* Totals layout */
+    .totals-section {
+      margin-bottom: 1.2rem;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 1rem;
+    }
+    .totals-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .totals-section h3 {
+      margin: 0 0 .3rem 0;
+      font-size: 1rem;
+      color: var(--muted);
+    }
+    .total-amount {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #059669;
+    }
+    .total-sub {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .total-breakdown {
+      font-size: 0.95rem;
+      margin-top: 0.3rem;
+    }
+    .total-breakdown .muted {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .tax-settings {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .tax-settings input { width: 60px; }
   </style>
 </head>
 <body>
@@ -70,15 +113,29 @@
 
     <!-- Totals -->
     <div class="card">
-      <div id="dailyTotal">Today: $0.00 (0h 0m)</div>
-      <div id="weeklyTotal">This Week (Gross): $0.00 (0h 0m)</div>
-      <div id="weeklyAfterTax"></div>
-      <label for="taxRateInput">Tax Rate (%)</label>
-      <input id="taxRateInput" type="number" step="0.1" value="15"/>
-      <button id="saveTaxRateBtn" class="btn btn-gray btn-small">Save Tax Rate</button>
-      <br>
-      <button id="resetTodayBtn" class="btn btn-gray btn-small">Reset Today</button>
-      <button id="resetWeekBtn" class="btn btn-gray btn-small">Reset Week</button>
+      <div class="totals-section">
+        <h3>Today</h3>
+        <div class="total-amount" id="dailyTotalAmount">$0.00</div>
+        <div class="total-sub" id="dailyTotalHours">(0h 0m)</div>
+        <button id="resetTodayBtn" class="btn btn-gray btn-small">Reset Today</button>
+      </div>
+
+      <div class="totals-section">
+        <h3>This Week</h3>
+        <div class="total-amount" id="weeklyGross">$0.00</div>
+        <div class="total-sub" id="weeklyGrossHours">(0h 0m)</div>
+        <div class="total-breakdown" id="weeklyAfterTax">
+          After Tax: $0.00 <br>
+          <span class="muted">(Tax: $0.00 @ 15%)</span>
+        </div>
+        <button id="resetWeekBtn" class="btn btn-gray btn-small">Reset Week</button>
+      </div>
+
+      <div class="tax-settings">
+        <label for="taxRateInput">Tax Rate (%)</label>
+        <input id="taxRateInput" type="number" step="0.1" value="15"/>
+        <button id="saveTaxRateBtn" class="btn btn-gray btn-small">Save</button>
+      </div>
     </div>
 
     <!-- History -->
@@ -163,10 +220,19 @@
         const w=this.logs.filter(l=>new Date(l.date)>=weekStart);
         const sum=(arr)=>arr.reduce((a,b)=>({pay:a.pay+b.pay,ms:a.ms+b.ms}),{pay:0,ms:0});
         const ds=sum(d), ws=sum(w);
-        document.getElementById('dailyTotal').textContent=`Today: ${ds.pay.toLocaleString("en-US",{style:"currency",currency:"USD"})} (${this.formatTime(ds.ms/1000)})`;
-        document.getElementById('weeklyTotal').textContent=`This Week (Gross): ${ws.pay.toLocaleString("en-US",{style:"currency",currency:"USD"})} (${this.formatTime(ws.ms/1000)})`;
+
+        // Daily
+        document.getElementById('dailyTotalAmount').textContent=ds.pay.toLocaleString("en-US",{style:"currency",currency:"USD"});
+        document.getElementById('dailyTotalHours').textContent=`(${this.formatTime(ds.ms/1000)})`;
+
+        // Weekly
+        document.getElementById('weeklyGross').textContent=ws.pay.toLocaleString("en-US",{style:"currency",currency:"USD"});
+        document.getElementById('weeklyGrossHours').textContent=`(${this.formatTime(ws.ms/1000)})`;
+
         const taxAmt=ws.pay*(this.taxRate/100), net=ws.pay-taxAmt;
-        document.getElementById('weeklyAfterTax').textContent=`After Tax: ${net.toLocaleString("en-US",{style:"currency",currency:"USD"})} (Tax: ${taxAmt.toLocaleString("en-US",{style:"currency",currency:"USD"})} @ ${this.taxRate}%)`;
+        document.getElementById('weeklyAfterTax').innerHTML=
+          `After Tax: ${net.toLocaleString("en-US",{style:"currency",currency:"USD"})}<br>
+           <span class="muted">(Tax: ${taxAmt.toLocaleString("en-US",{style:"currency",currency:"USD"})} @ ${this.taxRate}%)</span>`;
       }
       setTaxRate(rate){this.taxRate=rate; this.saveState(); this.updateTotals();}
       startWork(rate){this.hourlyRate=rate; this.isWorking=true; this.isPaused=false; this.onBreak=false; this.workStartTime=Date.now(); this.totalWorkedMs=0; document.getElementById("setupCard").classList.add("hidden"); document.getElementById("workCard").classList.remove("hidden");}
